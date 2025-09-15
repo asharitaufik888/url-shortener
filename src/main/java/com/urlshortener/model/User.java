@@ -16,6 +16,7 @@ public class User {
     @Column(unique = true, nullable = false, length = 50)
     private String username;
 
+    //cukup 64 karakter untuk menyimpan hashed password
     @Column(nullable = false, length = 64)
     private String password;
 }

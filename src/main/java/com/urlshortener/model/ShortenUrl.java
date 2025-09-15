@@ -20,6 +20,7 @@ public class ShortenUrl {
     @Column(nullable = false)
     private String originalUrl;
 
+    //panjang karakter 100 untuk menanggulangi naming shortcode yang cukup panjang, menyesuaikan dengan nama atau tanggal promo
     @Column(unique = true, nullable = false, length = 100)
     private String shortCode;
 
