@@ -1,0 +1,31 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/url_shortener
+    username: postgres
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  redis:
+    host: localhost
+    port: 6379
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+jwt:
+  secret: jPhAl0ULlKNhE6xi722aQep7Aoczx6a1hI03+X7K1PQ=
+  expirationMinutes: 15
+
+shortUrl:
+  expirationDays: 30

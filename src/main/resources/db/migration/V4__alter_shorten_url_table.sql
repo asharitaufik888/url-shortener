@@ -1,0 +1,1 @@
+ALTER TABLE shorten_url ADD COLUMN expired_at TIMESTAMP;
