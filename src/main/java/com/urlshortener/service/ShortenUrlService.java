@@ -5,6 +5,7 @@ import com.urlshortener.dto.response.ClickLogResponse;
 import com.urlshortener.dto.response.ShortenUrlResponse;
 import com.urlshortener.model.ClickLog;
 import com.urlshortener.model.ShortenUrl;
+import com.urlshortener.model.User;
 import com.urlshortener.repository.ClickLogRepository;
 import com.urlshortener.repository.ShortenUrlRepository;
 import com.urlshortener.repository.UserRepository;
@@ -35,10 +36,9 @@ public class ShortenUrlService {
 
     private static final String PREFIX = "url:";
 
-    public ShortenUrlResponse shortenUrl(ShortenUrlRequest shortenUrlRequest, String token) {
-        if(!jwtUtil.validateToken(token)) {
-            throw new JwtException("Invalid token");
-        }
+    public ShortenUrlResponse shortenUrl(ShortenUrlRequest shortenUrlRequest, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         String shortCode = (shortenUrlRequest.getCustomCode() != null && !shortenUrlRepository.existsByShortCode(shortenUrlRequest.getCustomCode()))
                 ? shortenUrlRequest.getCustomCode()
@@ -47,8 +47,7 @@ public class ShortenUrlService {
         ShortenUrl shortenUrl = new ShortenUrl();
         shortenUrl.setOriginalUrl(shortenUrlRequest.getOriginalUrl());
         shortenUrl.setShortCode(shortCode);
-        shortenUrl.setUser(userRepository.findByUsername(jwtUtil.extractUsername(token))
-                .orElseThrow(() -> new IllegalArgumentException("User not found")));
+        shortenUrl.setUser(user);
         shortenUrl.setExpiredAt(LocalDateTime.now().plusDays(expirationDays));
         ShortenUrl result = shortenUrlRepository.save(shortenUrl);
 
@@ -94,13 +93,10 @@ public class ShortenUrlService {
                 .createdAt(shortenUrl.getCreatedAt()).build();
     }
 
-    public List<ClickLogResponse> getStats(String shortCode, String token) {
-        //Throw exception when token invalid
-        if(!jwtUtil.validateToken(token)) {
-            throw new JwtException("Invalid token");
-        }
-        ShortenUrl shortenUrl = shortenUrlRepository.findByShortCode(shortCode)
-                .orElseThrow(() -> new IllegalArgumentException("URL not found"));
+    public List<ClickLogResponse> getStats(String shortCode, String username) {
+        ShortenUrl shortenUrl = shortenUrlRepository.findByShortCodeAndUserUsername(shortCode, username)
+                .orElseThrow(() -> new IllegalArgumentException("URL not found or unauthorized"));
+
         List<ClickLog> clickLogs = clickLogRepository.findAllByShortenUrlOrderByDateDesc(shortenUrl);
         List<ClickLogResponse> result = new ArrayList<>();
         //Populate clickLogs

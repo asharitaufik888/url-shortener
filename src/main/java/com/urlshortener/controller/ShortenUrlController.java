@@ -4,12 +4,15 @@ import com.urlshortener.dto.request.ShortenUrlRequest;
 import com.urlshortener.dto.response.ClickLogResponse;
 import com.urlshortener.dto.response.ShortenUrlResponse;
 import com.urlshortener.service.ShortenUrlService;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -22,9 +25,9 @@ public class ShortenUrlController {
     Endpoint to create short URL
      */
     @PostMapping
-    public ResponseEntity<ShortenUrlResponse> shorten(@RequestHeader("Authorization") String token,
-                                          @RequestBody ShortenUrlRequest shortenUrlRequest) {
-        return ResponseEntity.ok(shortenUrlService.shortenUrl(shortenUrlRequest, token));
+    public ResponseEntity<ShortenUrlResponse> shorten(Principal principal,
+                                                      @RequestBody ShortenUrlRequest shortenUrlRequest) {
+        return ResponseEntity.ok(shortenUrlService.shortenUrl(shortenUrlRequest, principal.getName()));
     }
 
     /*
@@ -50,8 +53,8 @@ public class ShortenUrlController {
     Endpoint to get short URL click statistic
      */
     @GetMapping("/stats/{shortCode}")
-    public ResponseEntity<List<ClickLogResponse>> stats(@RequestHeader("Authorization") String token, @PathVariable String shortCode) {
-        return ResponseEntity.ok(shortenUrlService.getStats(shortCode, token));
+    public ResponseEntity<List<ClickLogResponse>> stats(Principal principal, @PathVariable String shortCode) {
+        return ResponseEntity.ok(shortenUrlService.getStats(shortCode, principal.getName()));
     }
 }
 

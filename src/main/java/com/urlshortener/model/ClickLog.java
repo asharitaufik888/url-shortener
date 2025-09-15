@@ -1,7 +1,9 @@
 package com.urlshortener.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -11,6 +13,8 @@ import java.util.UUID;
         @UniqueConstraint(columnNames = {"shorten_url_id", "date"})
 })
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ClickLog {
     @Id
     @GeneratedValue
@@ -25,4 +29,10 @@ public class ClickLog {
 
     @Column(nullable = false)
     private long count = 0L;
+
+    public ClickLog(ShortenUrl shortenUrl, LocalDate date, long count) {
+        this.shortenUrl = shortenUrl;
+        this.count = count;
+        this.date = date;
+    }
 }

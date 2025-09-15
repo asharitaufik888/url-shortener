@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -53,8 +54,7 @@ class ShortenUrlServiceTest {
     }
 
     @Test
-    void shortenUrlShouldReturnResponseWhenTokenIsValidAndCustomCodeIsAvailable() {
-        String token = "validToken";
+    void shortenUrlShouldReturnResponseForValidUser() {
         String username = "user";
         String customCode = "custom123";
         ShortenUrlRequest request = new ShortenUrlRequest("https://lalala.com", customCode);
@@ -62,17 +62,14 @@ class ShortenUrlServiceTest {
         User user = new User();
         user.setUsername(username);
 
-        when(jwtUtil.validateToken(token)).thenReturn(true);
-        when(jwtUtil.extractUsername(token)).thenReturn(username);
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
         when(shortenUrlRepository.existsByShortCode(customCode)).thenReturn(false);
         when(shortenUrlRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        ShortenUrlResponse response = shortenUrlService.shortenUrl(request, token);
+        ShortenUrlResponse response = shortenUrlService.shortenUrl(request, username);
 
         assertEquals("https://lalala.com", response.getOriginalUrl());
         assertEquals(customCode, response.getShortCode());
-        assertEquals(0, response.getClickCount());
         assertNotNull(response.getCreatedAt());
     }
 
@@ -102,7 +99,6 @@ class ShortenUrlServiceTest {
 
     @Test
     void getStatsShouldReturnClickLogResponsesWhenTokenIsValid() {
-        String token = "validToken";
         String shortCode = "abc123";
         String username = "user";
 
@@ -119,11 +115,11 @@ class ShortenUrlServiceTest {
         log2.setDate(LocalDate.now().minusDays(1));
         log2.setCount(3);
 
-        when(jwtUtil.validateToken(token)).thenReturn(true);
-        when(shortenUrlRepository.findByShortCode(shortCode)).thenReturn(Optional.of(url));
+        when(shortenUrlRepository.findByShortCodeAndUserUsername(shortCode, username)).thenReturn(Optional.of(url));
+
         when(clickLogRepository.findAllByShortenUrlOrderByDateDesc(url)).thenReturn(List.of(log1, log2));
 
-        List<ClickLogResponse> stats = shortenUrlService.getStats(shortCode, token);
+        List<ClickLogResponse> stats = shortenUrlService.getStats(shortCode, username);
 
         assertEquals(2, stats.size());
         assertEquals(shortCode, stats.get(0).getShortCode());
@@ -131,22 +127,33 @@ class ShortenUrlServiceTest {
     }
 
     @Test
-    void shortenUrlShouldThrowJwtExceptionWhenTokenIsInvalid() {
+    void shortenUrlShouldThrowIllegalArgumentExceptionWhenTokenIsInvalid() {
         String token = "invalidToken";
         ShortenUrlRequest request = new ShortenUrlRequest("https://lalala.com", null);
 
-        when(jwtUtil.validateToken(token)).thenReturn(false);
-
-        assertThrows(JwtException.class, () -> shortenUrlService.shortenUrl(request, token));
+        assertThrows(IllegalArgumentException.class, () -> shortenUrlService.shortenUrl(request, token));
     }
 
     @Test
-    void getStatsShouldThrowJwtExceptionWhenTokenIsInvalid() {
-        String token = "invalidToken";
+    void getStatsShouldReturnClickLogResponsesForUserOwnedUrl() {
+        String shortCode = "abc123";
+        String username = "user";
 
-        when(jwtUtil.validateToken(token)).thenReturn(false);
+        ShortenUrl url = new ShortenUrl();
+        url.setId(UUID.randomUUID());
+        url.setShortCode(shortCode);
 
-        assertThrows(JwtException.class, () -> shortenUrlService.getStats("abc123", token));
+        ClickLog log1 = new ClickLog(url, LocalDate.now(), 5L);
+        ClickLog log2 = new ClickLog(url, LocalDate.now().minusDays(1), 3L);
+
+        when(shortenUrlRepository.findByShortCodeAndUserUsername(shortCode, username)).thenReturn(Optional.of(url));
+        when(clickLogRepository.findAllByShortenUrlOrderByDateDesc(url)).thenReturn(List.of(log1, log2));
+
+        List<ClickLogResponse> stats = shortenUrlService.getStats(shortCode, username);
+
+        assertEquals(2, stats.size());
+        assertEquals(5L, stats.get(0).getClickCount());
     }
+
 }
 

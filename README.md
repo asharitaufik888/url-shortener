@@ -30,3 +30,5 @@ Langkah-langkah menjalankan aplikasi:
 6. Sesuaikan konten application.yml dengan environmentmu
 7. Jalankan mvn clean install spring-boot:run untuk menjalankan aplikasi
 8. Coba di swagger atau postman
+
+Business Requirements Document dapat ditemukan pada https://docs.google.com/document/d/1fDznV8vjkwY7V8WhSwOGrugwIFNnsNYq/edit
